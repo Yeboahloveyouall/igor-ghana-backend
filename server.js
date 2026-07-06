@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.use(express.static('public'));
 
 // ==========================================
 // 2. MIDDLEWARE CONFIGURATIONS
@@ -47,26 +48,7 @@ async function verifyApiKey(req, res, next) {
     if (!apiKey) {
         return res.status(401).json({ error: "Access Denied. Secure 'x-api-key' header is missing." });
     }
-// Admin Security Logs Feed API Route
-app.get('/api/admin/logs', async (req, res) => {
-    try {
-        const { data, error } = await supabase
-            .from('incident_reports')
-            .select(`
-                id,
-                phone_number,
-                category,
-                created_at,
-                b2b_clients ( company_name )
-            `)
-            .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: "Failed to compile analytical data logs" });
-    }
-});
     try {
         // Query the database directory to see if this merchant profile key matches
         const { data: client, error } = await supabase
@@ -201,7 +183,28 @@ app.post('/api/report', verifyApiKey, async (req, res) => {
     }
 });
 
-// ROUTE 4: OFFLINE TELECOM SIMULATOR HUB (USSD Interface logic)
+// ROUTE 4: ADMIN SECURITY LOGS FEED
+app.get('/api/admin/logs', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('incident_reports')
+            .select(`
+                id,
+                phone_number,
+                category,
+                created_at,
+                b2b_clients ( business_name )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to compile analytical data logs" });
+    }
+});
+
+// ROUTE 5: OFFLINE TELECOM SIMULATOR HUB (USSD Interface logic)
 app.post('/api/ussd', async (req, res) => {
     const { phoneNumber, text, sessionId } = req.body;
     let response = "";
