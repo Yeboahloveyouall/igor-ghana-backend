@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Igor Ghana - Anti-Fraud Portal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #38bdf8;
+            margin-bottom: 5px;
+        }
+        p.subtitle {
+            color: #94a3b8;
+            margin-bottom: 25px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        input {
+            flex: 1;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background-color: #0f172a;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        input:focus {
+            border-color: #38bdf8;
+        }
+        button {
+            padding: 14px 24px;
+            background-color: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #0ea5e9;
+        }
+        .result-card {
+            display: none;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: left;
+            margin-top: 20px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .clean {
+            background-color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .danger {
+            background-color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .meta-item {
+            margin: 5px 0;
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🛡️ Igor Ghana</h1>
+        <p class="subtitle">Central Intelligence Fraud Registry Lookup</p>
+
+        <div class="search-box">
+            <input type="text" id="phoneInput" placeholder="Enter phone number (e.g. 0551234567)">
+            <button id="checkBtn">Verify Number</button>
+        </div>
+
+        <div id="resultCard" class="result-card">
+            <div id="cardStatus" class="card-title">RISK LEVEL</div>
+            <div class="meta-item"><strong>Phone:</strong> <span id="resPhone">-</span></div>
+            <div class="meta-item"><strong>Category:</strong> <span id="resCategory">-</span></div>
+            <div class="meta-item"><strong>Total Flags:</strong> <span id="resCount">-</span></div>
+            <div class="meta-item"><strong>Last Active Incident:</strong> <span id="resDate">-</span></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
