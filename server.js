@@ -47,7 +47,26 @@ async function verifyApiKey(req, res, next) {
     if (!apiKey) {
         return res.status(401).json({ error: "Access Denied. Secure 'x-api-key' header is missing." });
     }
+// Admin Security Logs Feed API Route
+app.get('/api/admin/logs', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('incident_reports')
+            .select(`
+                id,
+                phone_number,
+                category,
+                created_at,
+                b2b_clients ( company_name )
+            `)
+            .order('created_at', { ascending: false });
 
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to compile analytical data logs" });
+    }
+});
     try {
         // Query the database directory to see if this merchant profile key matches
         const { data: client, error } = await supabase

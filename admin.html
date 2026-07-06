@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Igor Ghana - Admin Live Feed</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container { max-width: 1200px; margin: 40px auto; padding: 20px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1a1a1a; border-radius: 8px; overflow: hidden; }
+        .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
+        .data-table th { background-color: #111; color: #ff3333; font-weight: 600; }
+        .data-table tr:hover { background-color: #222; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-high { background: rgba(255, 51, 51, 0.2); color: #ff3333; }
+        .refresh-btn { background: #ff3333; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .refresh-btn:hover { background: #cc0000; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>🛡️ Intelligence Live Feed</h1>
+            <button class="refresh-btn" id="refreshBtn">🔄 Refresh Logs</button>
+        </div>
+        <p style="color: #888;">Real-time network security logs compiled via secure B2B partner nodes.</p>
+
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Target Phone</th>
+                    <th>Category</th>
+                    <th>Source Node</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="logsTableBody">
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #666;">Loading live server stream...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function fetchLiveLogs() {
+            try {
+                // Pointing relatively so it functions perfectly both on localhost and live Render
+                const res = await fetch('/api/admin/logs');
+                const data = await res.json();
+                
+                const tbody = document.getElementById('logsTableBody');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No incidents reported yet.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(log => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="color: #888;">${new Date(log.created_at).toLocaleString()}</td>
+                        <td><strong>${log.phone_number}</strong></td>
+                        <td><span class="badge badge-high">${log.category}</span></td>
+                        <td style="color: #00ffcc;">${log.b2b_clients?.company_name || 'Anonymous Node'}</td>
+                        <td><span style="color: #00ff00;">● Logged</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Dashboard synchronization breakdown:", err);
+            }
+        }
+
+        document.getElementById('refreshBtn').addEventListener('click', fetchLiveLogs);
+        window.addEventListener('DOMContentLoaded', fetchLiveLogs);
+    </script>
+</body>
+</html>
