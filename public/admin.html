@@ -44,7 +44,6 @@
     </div>
 
     <script>
-    // Flag to prevent multiple simultaneous layout paints
     let isFetching = false;
 
     async function fetchLiveLogs() {
@@ -53,30 +52,42 @@
 
         try {
             const res = await fetch('/api/admin/logs');
-            const data = await res.json();
             
+            // Check if backend returned a non-200 error status code
+            if (!res.ok) {
+                throw new Error(`Server returned HTTP status ${res.status}`);
+            }
+
+            const data = await res.json();
             const tbody = document.getElementById('logsTableBody');
             
-            // Clean out placeholder elements cleanly
             tbody.innerHTML = '';
 
-            if (!data || data.length === 0) {
+            // Handle empty arrays safely
+            if (!data || !Array.isArray(data) || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No incidents reported yet.</td></tr>`;
-                isFetching = false;
                 return;
             }
 
-            // Fragment container to append everything securely at once
             const fragment = document.createDocumentFragment();
 
             data.forEach(log => {
+                if (!log) return; // Skip any corrupt empty arrays rows safely
+
                 const row = document.createElement('tr');
-                const clientName = log.b2b_clients ? log.b2b_clients.business_name : 'USSD Citizen Node';
                 
+                // CRASH PROTECTION: Uses optional chaining (?.) so it never hits a TypeError crash!
+                const clientName = log.b2b_clients?.business_name || 'USSD Citizen Node';
+                
+                // Safe fallbacks for every expected column property vector
+                const logDate = log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A';
+                const logPhone = log.phone_number || 'Unknown Number';
+                const logCategory = log.category || 'General MoMo Fraud';
+
                 row.innerHTML = `
-                    <td style="color: #888;">${new Date(log.created_at).toLocaleString()}</td>
-                    <td><strong>${log.phone_number}</strong></td>
-                    <td><span class="badge badge-high">${log.category || 'General MoMo Fraud'}</span></td>
+                    <td style="color: #888;">${logDate}</td>
+                    <td><strong>${logPhone}</strong></td>
+                    <td><span class="badge badge-high">${logCategory}</span></td>
                     <td style="color: #00ffcc;">${clientName}</td>
                     <td><span style="color: #00ff00;">● Logged</span></td>
                 `;
@@ -86,18 +97,17 @@
             tbody.appendChild(fragment);
         } catch (err) {
             console.error("Dashboard synchronization breakdown:", err);
-            document.getElementById('logsTableBody').innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ff3333;">⚠️ Stream sync broken</td></tr>`;
+            document.getElementById('logsTableBody').innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ff3333;">⚠️ Stream sync broken: ${err.message}</td></tr>`;
         } finally {
             isFetching = false;
         }
     }
 
     document.getElementById('refreshBtn').addEventListener('click', (e) => {
-        e.preventDefault(); // Prevents button click behavior from resetting form vectors
+        e.preventDefault();
         fetchLiveLogs();
     });
     
-    // Use window.onload instead of DOMContentLoaded to ensure CSS scripts finish loading completely first
     window.onload = fetchLiveLogs;
 </script>
 </body>
