@@ -5,116 +5,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Igor Ghana - Anti-Fraud Portal</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            margin: 0;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        :root {
+            --bg-color: #0d0d0d;
+            --card-bg: #1a1a1a;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --primary: #ff3333;
+            --primary-hover: #cc0000;
+            --success: #00ffcc;
+            --warning: #ffaa00;
         }
-        .container {
-            max-width: 600px;
-            width: 100%;
-            background: #1e293b;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            text-align: center;
-        }
-        h1 {
-            color: #38bdf8;
-            margin-bottom: 5px;
-        }
-        p.subtitle {
-            color: #94a3b8;
-            margin-bottom: 25px;
-        }
-        .search-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-        input {
-            flex: 1;
-            padding: 14px;
-            border-radius: 8px;
-            border: 1px solid #475569;
-            background-color: #0f172a;
-            color: white;
-            font-size: 16px;
-            outline: none;
-        }
-        input:focus {
-            border-color: #38bdf8;
-        }
-        button {
-            padding: 14px 24px;
-            background-color: #38bdf8;
-            color: #0f172a;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        button:hover {
-            background-color: #0ea5e9;
-        }
-        .result-card {
-            display: none;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: left;
-            margin-top: 20px;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .clean {
-            background-color: #065f46;
-            border: 1px solid #10b981;
-        }
-        .danger {
-            background-color: #991b1b;
-            border: 1px solid #ef4444;
-        }
-        .card-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .meta-item {
-            margin: 5px 0;
-            color: #e2e8f0;
-        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        
+        .portal-container { max-width: 500px; width: 100%; background: var(--card-bg); padding: 40px 30px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); border: 1px solid #222; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 2rem; color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .search-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+        .search-group label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: bold; }
+        .input-wrapper { display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; background: #111; border: 1px solid #333; padding: 15px; border-radius: 6px; color: white; font-size: 1.1rem; font-family: monospace; outline: none; transition: border-color 0.2s; }
+        input[type="text"]:focus { border-color: var(--primary); }
+        
+        .search-btn { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
+        .search-btn:hover { background: var(--primary-hover); }
+
+        .result-box { display: none; margin-top: 25px; padding: 20px; border-radius: 8px; animation: fadeIn 0.3s ease-in-out; }
+        .result-box.clean { display: block; background: rgba(0, 255, 204, 0.05); border: 1px solid var(--success); }
+        .result-box.danger { display: block; background: rgba(255, 51, 51, 0.05); border: 1px solid var(--primary); }
+        
+        .result-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .clean .result-title { color: var(--success); }
+        .danger .result-title { color: var(--primary); }
+        .result-desc { color: #ccc; font-size: 0.95rem; line-height: 1.5; }
+        
+        .meta-list { margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; color: var(--text-muted); }
+        .meta-item strong { color: #eee; font-family: monospace; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🛡️ Igor Ghana</h1>
-        <p class="subtitle">Central Intelligence Fraud Registry Lookup</p>
-
-        <div class="search-box">
-            <input type="text" id="phoneInput" placeholder="Enter phone number (e.g. 0551234567)">
-            <button id="checkBtn">Verify Number</button>
+    <div class="portal-container">
+        <div class="header">
+            <h1>🛡️ IGOR GHANA</h1>
+            <p>Verify phone numbers instantly against our decentralized crowd-sourced fraud index.</p>
         </div>
 
-        <div id="resultCard" class="result-card">
-            <div id="cardStatus" class="card-title">RISK LEVEL</div>
-            <div class="meta-item"><strong>Phone:</strong> <span id="resPhone">-</span></div>
-            <div class="meta-item"><strong>Category:</strong> <span id="resCategory">-</span></div>
-            <div class="meta-item"><strong>Total Flags:</strong> <span id="resCount">-</span></div>
-            <div class="meta-item"><strong>Last Active Incident:</strong> <span id="resDate">-</span></div>
+        <form id="searchForm" onsubmit="searchNumber(event)">
+            <div class="search-group">
+                <label for="phoneNumber">Enter Mobile Number</label>
+                <div class="input-wrapper">
+                    <input type="text" id="phoneNumber" placeholder="e.g. 0244XXXXXX" required autocomplete="off">
+                    <button type="submit" class="search-btn" id="submitBtn">Check</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="resultBox" class="result-box">
+            <div id="resultTitle" class="result-title"></div>
+            <p id="resultDesc" class="result-desc"></p>
+            <div id="metaList" class="meta-list"></div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        async function searchNumber(event) {
+            event.preventDefault();
+            const input = document.getElementById('phoneNumber');
+            const btn = document.getElementById('submitBtn');
+            const resultBox = document.getElementById('resultBox');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDesc = document.getElementById('resultDesc');
+            const metaList = document.getElementById('metaList');
+
+            const phone = input.value.trim();
+            if (!phone) return;
+
+            // UI Loading state
+            btn.disabled = true;
+            btn.textContent = "⌛";
+            resultBox.className = "result-box"; 
+
+            try {
+                const res = await fetch(`/api/check/${phone}`);
+                if (!res.ok) throw new Error("Network status error");
+                
+                const data = await res.json();
+
+                if (data.is_flagged) {
+                    resultBox.classList.add('danger');
+                    resultTitle.innerHTML = `🚨 High Risk Entity (${data.risk_level})`;
+                    resultDesc.textContent = `Warning! This specific endpoint has been compiled and cross-verified inside our intelligence database for high-frequency fraud patterns.`;
+                    
+                    metaList.innerHTML = `
+                        <div class="meta-item">Category: <strong>${data.details.category}</strong></div>
+                        <div class="meta-item">Total Reports Raised: <strong>${data.details.total_reports}</strong></div>
+                        <div class="meta-item">Last Flagged Activity: <strong>${new Date(data.details.last_incident).toLocaleString()}</strong></div>
+                    `;
+                } else {
+                    resultBox.classList.add('clean');
+                    resultTitle.innerHTML = `✅ Ledger Verification Clear`;
+                    resultDesc.textContent = data.message || `No suspicious record entries match this connection vector. Proceed with transaction protocol under standard security rules.`;
+                    metaList.innerHTML = '';
+                }
+            } catch (err) {
+                resultBox.classList.add('danger');
+                resultTitle.innerHTML = `⚠️ Network Timeout`;
+                resultDesc.textContent = `Unable to establish communications secure pathway with the central server node.`;
+                metaList.innerHTML = '';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Check";
+            }
+        }
+    </script>
 </body>
 </html>
