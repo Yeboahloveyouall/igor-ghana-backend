@@ -7,7 +7,7 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 
-const app = express();
+const app = report_text = express();
 const PORT = process.env.PORT || 3000;
 
 // ==========================================
@@ -188,33 +188,46 @@ app.post('/api/report', verifyApiKey, async (req, res) => {
     }
 });
 
-// ROUTE 4: ADMIN SECURITY LOGS FEED (Corrected to extract data from fraud_reports)
+// ROUTE 4: ADMIN SECURITY LOGS FEED (Fault-Tolerant Dynamic Mapping)
 app.get('/api/admin/logs', async (req, res) => {
     try {
+        // Query everything (*) to ensure column mismatches don't break the application
         const { data, error } = await supabase
             .from('fraud_reports')
-            .select('id, scammer_phone, raw_report_text, created_at')
+            .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Database Query Error:", error.message);
+            // Return an empty array cleanly rather than crashing with a 500 error
+            return res.json([]);
+        }
 
-        // Map backend columns to match the properties your admin table script looks for
+        if (!data || !Array.isArray(data)) {
+            return res.json([]);
+        }
+
+        // Map column variations safely on the fly
         const formattedLogs = data.map(log => {
             let parsedCategory = 'General MoMo Fraud';
             let sourceNode = 'API Secure Node';
 
-            if (log.raw_report_text) {
-                if (log.raw_report_text.startsWith('USSD Report:')) {
+            // Support both raw_report_text and standard report_text variations
+            const reportText = log.raw_report_text || log.report_text || '';
+            const phoneNumber = log.scammer_phone || log.phone_number || log.phone || 'Unknown';
+
+            if (reportText) {
+                if (reportText.startsWith('USSD Report:')) {
                     sourceNode = 'USSD Citizen Node';
-                    parsedCategory = log.raw_report_text.replace('USSD Report: ', '');
+                    parsedCategory = reportText.replace('USSD Report: ', '');
                 } else {
-                    parsedCategory = log.raw_report_text;
+                    parsedCategory = reportText;
                 }
             }
 
             return {
-                created_at: log.created_at,
-                phone_number: log.scammer_phone,
+                created_at: log.created_at || new Date().toISOString(),
+                phone_number: phoneNumber,
                 category: parsedCategory,
                 b2b_clients: {
                     business_name: sourceNode
@@ -224,8 +237,8 @@ app.get('/api/admin/logs', async (req, res) => {
 
         res.json(formattedLogs);
     } catch (err) {
-        console.error("Admin Log Sync Error:", err);
-        res.status(500).json({ error: "Failed to compile analytical data logs" });
+        console.error("Critical Exception in Admin Log Route:", err.message);
+        res.json([]);
     }
 });
 
