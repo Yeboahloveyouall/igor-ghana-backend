@@ -43,7 +43,7 @@
         </table>
     </div>
 
-    <script>
+   <script>
     let isFetching = false;
 
     async function fetchLiveLogs() {
@@ -51,42 +51,47 @@
         isFetching = true;
 
         try {
+            console.log("Initiating log sync sequence...");
             const res = await fetch('/api/admin/logs');
             
-            // Check if backend returned a non-200 error status code
             if (!res.ok) {
-                throw new Error(`Server returned HTTP status ${res.status}`);
+                throw new Error(`HTTP network error! Status: ${res.status}`);
             }
 
-            const data = await res.json();
+            // Let's inspect the raw text before parsing it to prevent JSON syntax crashes
+            const rawText = await res.text();
+            console.log("Raw Server Payload Received:", rawText);
+
+            // If the server sent back HTML instead of JSON, catch it before it breaks the loop
+            if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
+                throw new Error("Server returned an HTML page instead of a data array. Check backend routing.");
+            }
+
+            const data = JSON.parse(rawText);
             const tbody = document.getElementById('logsTableBody');
-            
             tbody.innerHTML = '';
 
-            // Handle empty arrays safely
             if (!data || !Array.isArray(data) || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No incidents reported yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No active incidents recorded in ledger.</td></tr>`;
                 return;
             }
 
             const fragment = document.createDocumentFragment();
 
             data.forEach(log => {
-                if (!log) return; // Skip any corrupt empty arrays rows safely
+                if (!log) return;
 
                 const row = document.createElement('tr');
                 
-                // CRASH PROTECTION: Uses optional chaining (?.) so it never hits a TypeError crash!
+                // Crash protection handling
                 const clientName = log.b2b_clients?.business_name || 'USSD Citizen Node';
-                
-                // Safe fallbacks for every expected column property vector
                 const logDate = log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A';
-                const logPhone = log.phone_number || 'Unknown Number';
+                const logPhone = log.phone_number || 'Unknown';
                 const logCategory = log.category || 'General MoMo Fraud';
 
                 row.innerHTML = `
                     <td style="color: #888;">${logDate}</td>
-                    <td><strong>${logPhone}</strong></td>
+                    <td style="color: #ff4d4d; font-family: monospace;"><strong>${logPhone}</strong></td>
                     <td><span class="badge badge-high">${logCategory}</span></td>
                     <td style="color: #00ffcc;">${clientName}</td>
                     <td><span style="color: #00ff00;">● Logged</span></td>
@@ -96,8 +101,14 @@
 
             tbody.appendChild(fragment);
         } catch (err) {
-            console.error("Dashboard synchronization breakdown:", err);
-            document.getElementById('logsTableBody').innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ff3333;">⚠️ Stream sync broken: ${err.message}</td></tr>`;
+            console.error("Dashboard Sync Crash:", err);
+            document.getElementById('logsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #ff3333; padding: 20px;">
+                        ⚠️ Stream sync broken: ${err.message}<br>
+                        <span style="color: #888; font-size: 0.8em;">Check browser console logs for details.</span>
+                    </td>
+                </tr>`;
         } finally {
             isFetching = false;
         }
@@ -108,7 +119,8 @@
         fetchLiveLogs();
     });
     
-    window.onload = fetchLiveLogs;
+    // Trigger automatically once everything loads
+    window.addEventListener('load', fetchLiveLogs);
 </script>
 </body>
 </html>
