@@ -188,23 +188,43 @@ app.post('/api/report', verifyApiKey, async (req, res) => {
     }
 });
 
-// ROUTE 4: ADMIN SECURITY LOGS FEED
+// ROUTE 4: ADMIN SECURITY LOGS FEED (Corrected to extract data from fraud_reports)
 app.get('/api/admin/logs', async (req, res) => {
     try {
         const { data, error } = await supabase
-            .from('incident_reports')
-            .select(`
-                id,
-                phone_number,
-                category,
-                created_at,
-                b2b_clients ( business_name )
-            `)
+            .from('fraud_reports')
+            .select('id, scammer_phone, raw_report_text, created_at')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        res.json(data);
+
+        // Map backend columns to match the properties your admin table script looks for
+        const formattedLogs = data.map(log => {
+            let parsedCategory = 'General MoMo Fraud';
+            let sourceNode = 'API Secure Node';
+
+            if (log.raw_report_text) {
+                if (log.raw_report_text.startsWith('USSD Report:')) {
+                    sourceNode = 'USSD Citizen Node';
+                    parsedCategory = log.raw_report_text.replace('USSD Report: ', '');
+                } else {
+                    parsedCategory = log.raw_report_text;
+                }
+            }
+
+            return {
+                created_at: log.created_at,
+                phone_number: log.scammer_phone,
+                category: parsedCategory,
+                b2b_clients: {
+                    business_name: sourceNode
+                }
+            };
+        });
+
+        res.json(formattedLogs);
     } catch (err) {
+        console.error("Admin Log Sync Error:", err);
         res.status(500).json({ error: "Failed to compile analytical data logs" });
     }
 });
