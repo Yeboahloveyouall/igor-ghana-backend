@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 // Parse incoming JSON request payloads automatically
 app.use(express.json());
 
-// Serve your dark-mode frontend web portal from the 'public' folder root automatically
+// Serve your frontend web portal assets cleanly
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Establish connection instance to your Supabase Cloud Database Engine
@@ -31,11 +31,11 @@ const publicApiLimiter = rateLimit({
     message: {
         error: "Too many lookup attempts from this device. Please try again after 15 minutes."
     },
-    standardHeaders: true, // Returns rate limit info in standard response headers
-    legacyHeaders: false,  // Disables outdated legacy headers
+    standardHeaders: true, 
+    legacyHeaders: false,  
 });
 
-// Apply the anti-spam protection specifically to lookups and USSD endpoints
+// Apply anti-spam protection specifically to lookups and USSD endpoints
 app.use('/api/check', publicApiLimiter);
 app.use('/api/ussd', publicApiLimiter);
 
@@ -50,7 +50,6 @@ async function verifyApiKey(req, res, next) {
     }
 
     try {
-        // Query the database directory to see if this merchant profile key matches
         const { data: client, error } = await supabase
             .from('b2b_clients')
             .select('business_name, is_active')
@@ -67,7 +66,6 @@ async function verifyApiKey(req, res, next) {
             return res.status(403).json({ error: "Forbidden. This business account has been deactivated." });
         }
 
-        // Pass the identified business label onto the request object context
         req.businessName = client.business_name;
         next();
     } catch (err) {
@@ -78,11 +76,6 @@ async function verifyApiKey(req, res, next) {
 // ==========================================
 // 📡 ROUTE ALIASES & NETWORK ENDPOINTS
 // ==========================================
-
-// EXPLICIT ROUTE FOR ADMIN PAGE (Fallback guarantee)
-app.get('/admin.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
 
 // ROUTE 1: BASELINE SERVICE STATUS CHECK
 app.get('/api/status', (req, res) => {
@@ -188,59 +181,7 @@ app.post('/api/report', verifyApiKey, async (req, res) => {
     }
 });
 
-// ROUTE 4: ADMIN SECURITY LOGS FEED (Error Exposure Variant)
-app.get('/api/admin/logs', async (req, res) => {
-    try {
-        // We remove .order() temporarily to see if a missing 'created_at' column is causing the crash
-        const { data, error } = await supabase
-            .from('fraud_reports')
-            .select('*');
-
-        if (error) {
-            console.error("Supabase Database Error:", error.message);
-            // Return status 200 but pass the error in an object so the frontend can print it
-            return res.json({ is_error: true, message: error.message });
-        }
-
-        if (!data || !Array.isArray(data)) {
-            return res.json([]);
-        }
-
-        const formattedLogs = data.map(log => {
-            let parsedCategory = 'General MoMo Fraud';
-            let sourceNode = 'API Secure Node';
-
-            const reportText = log.raw_report_text || log.report_text || '';
-            const phoneNumber = log.scammer_phone || log.phone_number || log.phone || 'Unknown';
-
-            if (reportText) {
-                if (reportText.startsWith('USSD Report:')) {
-                    sourceNode = 'USSD Citizen Node';
-                    parsedCategory = reportText.replace('USSD Report: ', '');
-                } else {
-                    parsedCategory = reportText;
-                }
-            }
-
-            return {
-                created_at: log.created_at || log.inserted_at || new Date().toISOString(),
-                phone_number: phoneNumber,
-                category: parsedCategory,
-                b2b_clients: {
-                    business_name: sourceNode
-                }
-            };
-        });
-
-        // Sort them cleanly in JavaScript memory instead of database level
-        formattedLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        res.json(formattedLogs);
-    } catch (err) {
-        res.json({ is_error: true, message: "Server Exception: " + err.message });
-    }
-});
-// ROUTE 5: OFFLINE TELECOM SIMULATOR HUB (USSD Interface logic)
+// ROUTE 4: OFFLINE TELECOM SIMULATOR HUB (USSD Interface logic)
 app.post('/api/ussd', async (req, res) => {
     const { phoneNumber, text, sessionId } = req.body;
     let response = "";
