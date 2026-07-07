@@ -44,24 +44,33 @@
     </div>
 
     <script>
+    // Flag to prevent multiple simultaneous layout paints
+    let isFetching = false;
+
     async function fetchLiveLogs() {
+        if (isFetching) return;
+        isFetching = true;
+
         try {
-            // Fetch the admin feed from your live gateway
             const res = await fetch('/api/admin/logs');
             const data = await res.json();
             
             const tbody = document.getElementById('logsTableBody');
+            
+            // Clean out placeholder elements cleanly
             tbody.innerHTML = '';
 
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No incidents reported yet.</td></tr>`;
+                isFetching = false;
                 return;
             }
 
+            // Fragment container to append everything securely at once
+            const fragment = document.createDocumentFragment();
+
             data.forEach(log => {
                 const row = document.createElement('tr');
-                
-                // Matches the backend 'business_name' mapping perfectly!
                 const clientName = log.b2b_clients ? log.b2b_clients.business_name : 'USSD Citizen Node';
                 
                 row.innerHTML = `
@@ -71,15 +80,25 @@
                     <td style="color: #00ffcc;">${clientName}</td>
                     <td><span style="color: #00ff00;">● Logged</span></td>
                 `;
-                tbody.appendChild(row);
+                fragment.appendChild(row);
             });
+
+            tbody.appendChild(fragment);
         } catch (err) {
             console.error("Dashboard synchronization breakdown:", err);
+            document.getElementById('logsTableBody').innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ff3333;">⚠️ Stream sync broken</td></tr>`;
+        } finally {
+            isFetching = false;
         }
     }
 
-    document.getElementById('refreshBtn').addEventListener('click', fetchLiveLogs);
-    window.addEventListener('DOMContentLoaded', fetchLiveLogs);
+    document.getElementById('refreshBtn').addEventListener('click', (e) => {
+        e.preventDefault(); // Prevents button click behavior from resetting form vectors
+        fetchLiveLogs();
+    });
+    
+    // Use window.onload instead of DOMContentLoaded to ensure CSS scripts finish loading completely first
+    window.onload = fetchLiveLogs;
 </script>
 </body>
 </html>
