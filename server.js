@@ -3,12 +3,12 @@
 // ==========================================
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-app.use(express.static('public'));
 
 // ==========================================
 // 2. MIDDLEWARE CONFIGURATIONS
@@ -16,8 +16,8 @@ app.use(express.static('public'));
 // Parse incoming JSON request payloads automatically
 app.use(express.json());
 
-// Serve your dark-mode frontend web portal from the 'public' folder
-app.use(express.static('public'));
+// Serve your dark-mode frontend web portal from the 'public' folder root automatically
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Establish connection instance to your Supabase Cloud Database Engine
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
@@ -78,6 +78,11 @@ async function verifyApiKey(req, res, next) {
 // ==========================================
 // 📡 ROUTE ALIASES & NETWORK ENDPOINTS
 // ==========================================
+
+// EXPLICIT ROUTE FOR ADMIN PAGE (Fallback guarantee)
+app.get('/admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
 // ROUTE 1: BASELINE SERVICE STATUS CHECK
 app.get('/api/status', (req, res) => {
