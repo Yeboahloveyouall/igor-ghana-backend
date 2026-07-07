@@ -7,7 +7,7 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const rateLimit = require('express-rate-limit');
 
-const app = report_text = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==========================================
@@ -188,32 +188,35 @@ app.post('/api/report', verifyApiKey, async (req, res) => {
     }
 });
 
-// ROUTE 4: ADMIN SECURITY LOGS FEED (Fault-Tolerant Dynamic Mapping)
+// ROUTE 4: ADMIN SECURITY LOGS FEED (Strict Log Parsing Engine)
 app.get('/api/admin/logs', async (req, res) => {
     try {
-        // Query everything (*) to ensure column mismatches don't break the application
+        console.log("=== ADMIN API TRIGGERED: Fetching from fraud_reports ===");
+        
         const { data, error } = await supabase
             .from('fraud_reports')
             .select('*')
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error("Supabase Database Query Error:", error.message);
-            // Return an empty array cleanly rather than crashing with a 500 error
+            console.error("❌ Supabase Retrieval Error:", error.message);
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Diagnostic Step: Log the raw objects to Render's terminal logs so you can see column keys
+        console.log("Raw items from Database:", JSON.stringify(data));
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            console.log("⚠️ Database table query returned completely empty.");
             return res.json([]);
         }
 
-        if (!data || !Array.isArray(data)) {
-            return res.json([]);
-        }
-
-        // Map column variations safely on the fly
-        const formattedLogs = data.map(log => {
+        const formattedLogs = data.map((log, index) => {
             let parsedCategory = 'General MoMo Fraud';
             let sourceNode = 'API Secure Node';
 
-            // Support both raw_report_text and standard report_text variations
-            const reportText = log.raw_report_text || log.report_text || '';
+            // Extract text matching any possible column schema names
+            const reportText = log.raw_report_text || log.report_text || log.description || '';
             const phoneNumber = log.scammer_phone || log.phone_number || log.phone || 'Unknown';
 
             if (reportText) {
@@ -224,6 +227,8 @@ app.get('/api/admin/logs', async (req, res) => {
                     parsedCategory = reportText;
                 }
             }
+
+            console.log(`Mapping Row [${index}]: Phone=${phoneNumber}, Category=${parsedCategory}`);
 
             return {
                 created_at: log.created_at || new Date().toISOString(),
@@ -237,11 +242,10 @@ app.get('/api/admin/logs', async (req, res) => {
 
         res.json(formattedLogs);
     } catch (err) {
-        console.error("Critical Exception in Admin Log Route:", err.message);
-        res.json([]);
+        console.error("🔥 Critical Route 4 Crash:", err.message);
+        res.status(500).json({ error: "Exception caught during log generation" });
     }
 });
-
 // ROUTE 5: OFFLINE TELECOM SIMULATOR HUB (USSD Interface logic)
 app.post('/api/ussd', async (req, res) => {
     const { phoneNumber, text, sessionId } = req.body;
