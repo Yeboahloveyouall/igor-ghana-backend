@@ -188,35 +188,29 @@ app.post('/api/report', verifyApiKey, async (req, res) => {
     }
 });
 
-// ROUTE 4: ADMIN SECURITY LOGS FEED (Strict Log Parsing Engine)
+// ROUTE 4: ADMIN SECURITY LOGS FEED (Error Exposure Variant)
 app.get('/api/admin/logs', async (req, res) => {
     try {
-        console.log("=== ADMIN API TRIGGERED: Fetching from fraud_reports ===");
-        
+        // We remove .order() temporarily to see if a missing 'created_at' column is causing the crash
         const { data, error } = await supabase
             .from('fraud_reports')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .select('*');
 
         if (error) {
-            console.error("❌ Supabase Retrieval Error:", error.message);
-            return res.status(500).json({ error: error.message });
+            console.error("Supabase Database Error:", error.message);
+            // Return status 200 but pass the error in an object so the frontend can print it
+            return res.json({ is_error: true, message: error.message });
         }
 
-        // Diagnostic Step: Log the raw objects to Render's terminal logs so you can see column keys
-        console.log("Raw items from Database:", JSON.stringify(data));
-
-        if (!data || !Array.isArray(data) || data.length === 0) {
-            console.log("⚠️ Database table query returned completely empty.");
+        if (!data || !Array.isArray(data)) {
             return res.json([]);
         }
 
-        const formattedLogs = data.map((log, index) => {
+        const formattedLogs = data.map(log => {
             let parsedCategory = 'General MoMo Fraud';
             let sourceNode = 'API Secure Node';
 
-            // Extract text matching any possible column schema names
-            const reportText = log.raw_report_text || log.report_text || log.description || '';
+            const reportText = log.raw_report_text || log.report_text || '';
             const phoneNumber = log.scammer_phone || log.phone_number || log.phone || 'Unknown';
 
             if (reportText) {
@@ -228,10 +222,8 @@ app.get('/api/admin/logs', async (req, res) => {
                 }
             }
 
-            console.log(`Mapping Row [${index}]: Phone=${phoneNumber}, Category=${parsedCategory}`);
-
             return {
-                created_at: log.created_at || new Date().toISOString(),
+                created_at: log.created_at || log.inserted_at || new Date().toISOString(),
                 phone_number: phoneNumber,
                 category: parsedCategory,
                 b2b_clients: {
@@ -240,10 +232,12 @@ app.get('/api/admin/logs', async (req, res) => {
             };
         });
 
+        // Sort them cleanly in JavaScript memory instead of database level
+        formattedLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
         res.json(formattedLogs);
     } catch (err) {
-        console.error("🔥 Critical Route 4 Crash:", err.message);
-        res.status(500).json({ error: "Exception caught during log generation" });
+        res.json({ is_error: true, message: "Server Exception: " + err.message });
     }
 });
 // ROUTE 5: OFFLINE TELECOM SIMULATOR HUB (USSD Interface logic)

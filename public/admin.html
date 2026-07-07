@@ -43,7 +43,7 @@
         </table>
     </div>
 
-   <script>
+  <script>
     let isFetching = false;
 
     async function fetchLiveLogs() {
@@ -58,16 +58,13 @@
                 throw new Error(`HTTP network error! Status: ${res.status}`);
             }
 
-            // Let's inspect the raw text before parsing it to prevent JSON syntax crashes
-            const rawText = await res.text();
-            console.log("Raw Server Payload Received:", rawText);
+            const data = await res.json();
 
-            // If the server sent back HTML instead of JSON, catch it before it breaks the loop
-            if (rawText.trim().startsWith('<!DOCTYPE') || rawText.trim().startsWith('<html')) {
-                throw new Error("Server returned an HTML page instead of a data array. Check backend routing.");
+            // If the server explicitly flagged an internal database issue, display it
+            if (data && data.is_error) {
+                throw new Error(`Database Error: ${data.message}`);
             }
 
-            const data = JSON.parse(rawText);
             const tbody = document.getElementById('logsTableBody');
             tbody.innerHTML = '';
 
@@ -82,8 +79,6 @@
                 if (!log) return;
 
                 const row = document.createElement('tr');
-                
-                // Crash protection handling
                 const clientName = log.b2b_clients?.business_name || 'USSD Citizen Node';
                 const logDate = log.created_at ? new Date(log.created_at).toLocaleString() : 'N/A';
                 const logPhone = log.phone_number || 'Unknown';
@@ -119,7 +114,6 @@
         fetchLiveLogs();
     });
     
-    // Trigger automatically once everything loads
     window.addEventListener('load', fetchLiveLogs);
 </script>
 </body>
