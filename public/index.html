@@ -24,14 +24,24 @@
         .header h1 { font-size: 2rem; color: var(--text-main); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .header p { color: var(--text-muted); font-size: 0.95rem; }
 
-        .search-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+        /* Tabs System */
+        .tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-weight: bold; cursor: pointer; padding: 5px 10px; font-size: 0.95rem; transition: color 0.2s; }
+        .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+        .form-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .form-section.active { display: block; }
+
+        .search-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
         .search-group label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: bold; }
         .input-wrapper { display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; background: #111; border: 1px solid #333; padding: 15px; border-radius: 6px; color: white; font-size: 1.1rem; font-family: monospace; outline: none; transition: border-color 0.2s; }
-        input[type="text"]:focus { border-color: var(--primary); }
         
-        .search-btn { background: var(--primary); color: white; border: none; padding: 0 25px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
-        .search-btn:hover { background: var(--primary-hover); }
+        input[type="text"], select, textarea { width: 100%; background: #111; border: 1px solid #333; padding: 15px; border-radius: 6px; color: white; font-size: 1.1rem; outline: none; transition: border-color 0.2s; }
+        input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--primary); }
+        textarea { font-size: 1rem; resize: none; height: 80px; }
+        
+        .action-btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: background 0.2s; width: 100%; }
+        .action-btn:hover { background: var(--primary-hover); }
 
         .result-box { display: none; margin-top: 25px; padding: 20px; border-radius: 8px; animation: fadeIn 0.3s ease-in-out; }
         .result-box.clean { display: block; background: rgba(0, 255, 204, 0.05); border: 1px solid var(--success); }
@@ -53,18 +63,51 @@
     <div class="portal-container">
         <div class="header">
             <h1>🛡️ IGOR GHANA</h1>
-            <p>Verify phone numbers instantly against our decentralized crowd-sourced fraud index.</p>
+            <p>Decentralized crowd-sourced intelligence network.</p>
         </div>
 
-        <form id="searchForm" onsubmit="searchNumber(event)">
-            <div class="search-group">
-                <label for="phoneNumber">Enter Mobile Number</label>
-                <div class="input-wrapper">
-                    <input type="text" id="phoneNumber" placeholder="e.g. 0244XXXXXX" required autocomplete="off">
-                    <button type="submit" class="search-btn" id="submitBtn">Check</button>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('search')">🔍 Check Number</button>
+            <button class="tab-btn" onclick="switchTab('report')">📢 Report Fraud</button>
+        </div>
+
+        <!-- SEARCH TAB -->
+        <div id="searchSection" class="form-section active">
+            <form onsubmit="searchNumber(event)">
+                <div class="search-group">
+                    <label>Enter Mobile Number</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="searchPhone" placeholder="e.g. 0244XXXXXX" required autocomplete="off">
+                    </div>
                 </div>
-            </div>
-        </form>
+                <button type="submit" class="action-btn" id="searchBtn">Verify Target Vector</button>
+            </form>
+        </div>
+
+        <!-- REPORT TAB -->
+        <div id="reportSection" class="form-section">
+            <form onsubmit="submitReport(event)">
+                <div class="search-group">
+                    <label>Scammer's Mobile Number</label>
+                    <input type="text" id="reportPhone" placeholder="e.g. 055XXXXXXX" required autocomplete="off">
+                </div>
+                <div class="search-group">
+                    <label>Fraud Category</label>
+                    <select id="reportCategory">
+                        <option value="Fake Promo Wins">Fake Promo Wins</option>
+                        <option value="MoMo Cashout Fraud">MoMo Cashout Fraud</option>
+                        <option value="Impersonation Scams">Impersonation / Identity Theft</option>
+                        <option value="Other Financial Fraud">Other Advanced Scams</option>
+                    </select>
+                </div>
+                <div class="search-group">
+                    <label>Incident Details / Evidence</label>
+                    <textarea id="reportText" placeholder="Describe how the scam operated briefly..." required></textarea>
+                </div>
+                <!-- Public reporting bypass header uses client-side tracking node key -->
+                <button type="submit" class="action-btn" id="reportBtn" style="background: #e6b800; color: black;">Submit Public Intel Report</button>
+            </form>
+        </div>
 
         <div id="resultBox" class="result-box">
             <div id="resultTitle" class="result-title"></div>
@@ -74,53 +117,107 @@
     </div>
 
     <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('resultBox').className = "result-box"; 
+            
+            if(tab === 'search') {
+                event.target.classList.add('active');
+                document.getElementById('searchSection').classList.add('active');
+            } else {
+                event.target.classList.add('active');
+                document.getElementById('reportSection').classList.add('active');
+            }
+        }
+
         async function searchNumber(event) {
             event.preventDefault();
-            const input = document.getElementById('phoneNumber');
-            const btn = document.getElementById('submitBtn');
+            const input = document.getElementById('searchPhone');
+            const btn = document.getElementById('searchBtn');
             const resultBox = document.getElementById('resultBox');
             const resultTitle = document.getElementById('resultTitle');
             const resultDesc = document.getElementById('resultDesc');
             const metaList = document.getElementById('metaList');
 
             const phone = input.value.trim();
-            if (!phone) return;
-
-            // UI Loading state
             btn.disabled = true;
-            btn.textContent = "⌛";
+            btn.textContent = "Querying Database Core...";
             resultBox.className = "result-box"; 
 
             try {
                 const res = await fetch(`/api/check/${phone}`);
-                if (!res.ok) throw new Error("Network status error");
-                
                 const data = await res.json();
 
                 if (data.is_flagged) {
                     resultBox.classList.add('danger');
-                    resultTitle.innerHTML = `🚨 High Risk Entity (${data.risk_level})`;
-                    resultDesc.textContent = `Warning! This specific endpoint has been compiled and cross-verified inside our intelligence database for high-frequency fraud patterns.`;
-                    
+                    resultTitle.innerHTML = `🚨 High Risk Profile (${data.risk_level})`;
+                    resultDesc.textContent = `Warning! This endpoint matches confirmed fraudulent vectors logged by partner nodes.`;
                     metaList.innerHTML = `
                         <div class="meta-item">Category: <strong>${data.details.category}</strong></div>
-                        <div class="meta-item">Total Reports Raised: <strong>${data.details.total_reports}</strong></div>
-                        <div class="meta-item">Last Flagged Activity: <strong>${new Date(data.details.last_incident).toLocaleString()}</strong></div>
+                        <div class="meta-item">Total Reports: <strong>${data.details.total_reports}</strong></div>
+                        <div class="meta-item">Last Flagged: <strong>${new Date(data.details.last_incident).toLocaleString()}</strong></div>
                     `;
                 } else {
                     resultBox.classList.add('clean');
-                    resultTitle.innerHTML = `✅ Ledger Verification Clear`;
-                    resultDesc.textContent = data.message || `No suspicious record entries match this connection vector. Proceed with transaction protocol under standard security rules.`;
+                    resultTitle.innerHTML = `✅ Verification Clear`;
+                    resultDesc.textContent = `No dynamic fraud signatures found for this number vector.`;
                     metaList.innerHTML = '';
                 }
             } catch (err) {
                 resultBox.classList.add('danger');
-                resultTitle.innerHTML = `⚠️ Network Timeout`;
-                resultDesc.textContent = `Unable to establish communications secure pathway with the central server node.`;
-                metaList.innerHTML = '';
+                resultTitle.innerHTML = `⚠️ Sync Failure`;
+                resultDesc.textContent = `Could not cleanly reach the central server pipeline.`;
             } finally {
                 btn.disabled = false;
-                btn.textContent = "Check";
+                btn.textContent = "Verify Target Vector";
+            }
+        }
+
+        async function submitReport(event) {
+            event.preventDefault();
+            const phoneInput = document.getElementById('reportPhone');
+            const catSelect = document.getElementById('reportCategory');
+            const textInput = document.getElementById('reportText');
+            const btn = document.getElementById('reportBtn');
+            const resultBox = document.getElementById('resultBox');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDesc = document.getElementById('resultDesc');
+
+            btn.disabled = true;
+            btn.textContent = "Broadcasting Intel...";
+            resultBox.className = "result-box";
+
+            try {
+                // Submit directly via public simulation parameters
+                const res = await fetch('/api/ussd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phoneNumber: "0000000000", 
+                        text: `2*${phoneInput.value.trim()}*${catSelect.value} - ${textInput.value.trim()}`,
+                        sessionId: "web_anonymous_node_" + Date.now()
+                    })
+                });
+
+                if (res.ok) {
+                    resultBox.classList.add('clean');
+                    resultTitle.innerHTML = `🛡️ Broadcast Success`;
+                    resultDesc.textContent = `The fraud signature has been committed to the decentralized registry database successfully.`;
+                    
+                    // Reset forms on successful transaction push
+                    phoneInput.value = '';
+                    textInput.value = '';
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                resultBox.classList.add('danger');
+                resultTitle.innerHTML = `⚠️ Broadcast Blocked`;
+                resultDesc.textContent = `Failed to commit intelligence package. Connection pool rejected.`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Submit Public Intel Report";
             }
         }
     </script>
