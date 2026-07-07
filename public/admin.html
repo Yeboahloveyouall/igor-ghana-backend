@@ -44,38 +44,42 @@
     </div>
 
     <script>
-        async function fetchLiveLogs() {
-            try {
-                // Pointing relatively so it functions perfectly both on localhost and live Render
-                const res = await fetch('/api/admin/logs');
-                const data = await res.json();
-                
-                const tbody = document.getElementById('logsTableBody');
-                tbody.innerHTML = '';
+    async function fetchLiveLogs() {
+        try {
+            // Fetch the admin feed from your live gateway
+            const res = await fetch('/api/admin/logs');
+            const data = await res.json();
+            
+            const tbody = document.getElementById('logsTableBody');
+            tbody.innerHTML = '';
 
-                if (data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No incidents reported yet.</td></tr>`;
-                    return;
-                }
-
-                data.forEach(log => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td style="color: #888;">${new Date(log.created_at).toLocaleString()}</td>
-                        <td><strong>${log.phone_number}</strong></td>
-                        <td><span class="badge badge-high">${log.category}</span></td>
-                        <td style="color: #00ffcc;">${log.b2b_clients?.company_name || 'Anonymous Node'}</td>
-                        <td><span style="color: #00ff00;">● Logged</span></td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            } catch (err) {
-                console.error("Dashboard synchronization breakdown:", err);
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #666;">No incidents reported yet.</td></tr>`;
+                return;
             }
-        }
 
-        document.getElementById('refreshBtn').addEventListener('click', fetchLiveLogs);
-        window.addEventListener('DOMContentLoaded', fetchLiveLogs);
-    </script>
+            data.forEach(log => {
+                const row = document.createElement('tr');
+                
+                // Matches the backend 'business_name' mapping perfectly!
+                const clientName = log.b2b_clients ? log.b2b_clients.business_name : 'USSD Citizen Node';
+                
+                row.innerHTML = `
+                    <td style="color: #888;">${new Date(log.created_at).toLocaleString()}</td>
+                    <td><strong>${log.phone_number}</strong></td>
+                    <td><span class="badge badge-high">${log.category || 'General MoMo Fraud'}</span></td>
+                    <td style="color: #00ffcc;">${clientName}</td>
+                    <td><span style="color: #00ff00;">● Logged</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        } catch (err) {
+            console.error("Dashboard synchronization breakdown:", err);
+        }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchLiveLogs);
+    window.addEventListener('DOMContentLoaded', fetchLiveLogs);
+</script>
 </body>
 </html>
